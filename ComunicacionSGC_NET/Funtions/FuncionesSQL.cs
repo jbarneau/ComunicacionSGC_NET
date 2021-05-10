@@ -1604,7 +1604,7 @@ namespace ComunicacionSGC_NET.Funtions
                         MedColoca medidor = obtenerMedidorNaturgy(dt.GetString(12));
                         if (medidor.existe)
                         {
-                            OT42_43C.capacColoMac = medidor.Capacidad.ToString().PadLeft(7, '0');
+                            OT42_43C.capacColoMac = medidor.Capacidad.ToString().PadLeft(4, '0');
                             OT42_43C.marcaColoMac = medidor.MarcaMedidor.ToString().PadLeft(2, '0');
                             OT42_43C.unidMedContColoMac = medidor.Esferas;
                         }
@@ -1666,7 +1666,7 @@ namespace ComunicacionSGC_NET.Funtions
                         }
                     }
                     OT42_43C.observNuevaMac = ObsGas(obs);
-                    OT42_43C.anexosMac = obtenerAnexos(poliza, "45", ngnf, (DateTime)dt.GetDateTime(3), fe);
+                    OT42_43C.anexosMac = obtenerAnexos(poliza, OT, ngnf, (DateTime)dt.GetDateTime(3), fe);
                     for (int cv = OT42_43C.colorMac.Count; cv <= 9; cv++)
                     {
                         OT42_43C.cdVivMac.Add("00");

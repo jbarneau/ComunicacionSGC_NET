@@ -210,7 +210,7 @@ namespace ComunicacionSGC_NET
                     string mensaje = probarConexion();
                     File.AppendAllText(fichero, "\n *** PROBANDO CONEXION  ***\n *** RESULTADO: " + mensaje + " ***");
                     File.AppendAllText(fichero, "\n --------------------------------------------------");
-                    mensaje = "OK";
+                   // mensaje = "OK";
                     if (mensaje == "OK")
                     {
                         timerProceso.Stop();
