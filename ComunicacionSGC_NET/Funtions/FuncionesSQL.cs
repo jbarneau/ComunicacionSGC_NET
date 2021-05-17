@@ -168,6 +168,32 @@ namespace ComunicacionSGC_NET.Funtions
                 cnn.Close();
             }
         }
+        public string ComunicarMedidorAlmacen(decimal NSERIE, string POLIZA)
+                    {
+            string resultado = "Se cambio el estado del medidor " + NSERIE + " utilizado en poliza " + POLIZA;
+            SqlConnection con1 = new SqlConnection(cadena.Almacen);
+            con1.Open();
+            try
+            {
+                // creo el comando para pasarle los parametros
+                SqlCommand comando1 = new SqlCommand("Update T_MEDI_102 set POLIZA_102=@D1, F_POLIZA_102=@D2, USER_102=@D3, ESTADO_102 = 5 WHERE NSERIE_102=@E1", con1);
+                // creo el lector de parametros
+                comando1.Parameters.Add(new SqlParameter("D1", POLIZA));
+                comando1.Parameters.Add(new SqlParameter("D2", DateTime.Now));
+                comando1.Parameters.Add(new SqlParameter("D3", "0"));
+                comando1.Parameters.Add(new SqlParameter("E1", NSERIE));
+                comando1.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                resultado = "Ocurrio un error al actualizar el medidor " + NSERIE + "\n Error: \n" + ex.Message + "\n";
+
+            }
+            finally { 
+            con1.Close();
+            }
+            return resultado;
+        }
         #endregion
         #region "Generador de ot Acometida"
         //acometida
@@ -2074,6 +2100,8 @@ namespace ComunicacionSGC_NET.Funtions
             }
             return elcorre;
         }
+       
+
         #endregion
         #region "INDICADORES"
 

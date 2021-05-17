@@ -144,6 +144,144 @@ namespace ComunicacionSGC_NET.Funtions
             }
             return log;
         }
+        public string Com37(string Poli, DateTime Fe, string ntrabajo, DateTime feCliente, String nRgnf)
+        {
+            string log = "Poliza " + Poli + " Tipo trabajo:37 - Fecha: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + "\n";
+            OT37_39_40 o37 = meBase.GENERAR_OT_37(Poli, Fe, ntrabajo, feCliente);
+            if (o37 != null)
+            {
+                ComunicarSGC funcion = new ComunicarSGC();
+                log = log + "Envio: " + JsonConvert.SerializeObject(o37, Formatting.None).ToString();
+                string respuesta1 = funcion.comunicarOT37_SGC(o37);
+                log = log + "\n Respuesta: " + respuesta1;
+                if (respuesta1 != "" && respuesta1 != "--")
+                {
+                    try
+                    {
+                        ErrorSGC respuesta = JsonConvert.DeserializeObject<ErrorSGC>(respuesta1);
+                        int secomunico = respuesta.nreInput.Length != 0 ? 0 : 1;
+                        meBase.ComunicarBD_C901(Poli, ntrabajo, Fe, "37", secomunico, respuesta.nreInput);
+                        if (secomunico == 1)
+                            log = log + "\n" + comunicar_GEO(Poli, nRgnf);
+                    }
+                    catch (Exception ex)
+                    {
+                        log = log + "ERROR AL SERIALIZAR RESPUESTA " + ex.Message;
+                    }
+                }
+            }
+            else
+            {
+                log = log + "ERROR AL CONSTRUIR OBJETO";
+            }
+            return log;
+        }
+       public string Com39(string Poli, DateTime Fe, string ntrabajo, DateTime feCliente, String nRgnf)
+        {
+            string log = "Poliza " + Poli + " Tipo trabajo:39 - Fecha: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + "\n";
+            OT37_39_40 o39 = meBase.GENERAR_OT_39(Poli, Fe, ntrabajo, feCliente);
+            if (o39 != null)
+            {
+                try
+                {
+                    ComunicarSGC funcion = new ComunicarSGC();
+                    log = log + "Envio: " + JsonConvert.SerializeObject(o39, Formatting.None).ToString();
+                    string respuesta1 = funcion.comunicarOT39_SGC(o39);
+                    log = log + "\n Respuesta: " + respuesta1;
+                    if (respuesta1 != "" && respuesta1 != "--")
+                    {
+                        ErrorSGC respuesta = JsonConvert.DeserializeObject<ErrorSGC>(respuesta1);
+                        int secomunico = respuesta.nreInput.Length != 0 ? 0 : 1;
+                        meBase.ComunicarBD_C901(Poli, ntrabajo, Fe, "39", secomunico, respuesta.nreInput);
+                        if (secomunico == 1)
+                            log = log + "\n" + comunicar_GEO(Poli, nRgnf);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log = log + "ERROR AL SERIALIZAR RESPUESTA " + ex.Message;
+                }
+            }
+            else
+            {
+                log = log + "ERROR AL CONSTRUIR OBJETO";
+            }
+            return log;
+        }
+        public string Com40(string Poli, DateTime Fe, string ntrabajo, DateTime feCliente, String nRgnf)
+        {
+            string log = "Poliza " + Poli + " Tipo trabajo:40 - Fecha: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + "\n";
+            OT37_39_40 o40 = meBase.GENERAR_OT_40(Poli, Fe, ntrabajo, feCliente);
+            if (o40 != null)
+            {
+                try
+                {
+                    ComunicarSGC funcion = new ComunicarSGC();
+                    log = log + "Envio: " + JsonConvert.SerializeObject(o40, Formatting.None).ToString();
+                    string respuesta1 = funcion.comunicarOT40_SGC(o40);
+                    log = log + "\n Respuesta: " + respuesta1;
+                    if (respuesta1 != "" && respuesta1 != "--")
+                    {
+                        ErrorSGC respuesta = JsonConvert.DeserializeObject<ErrorSGC>(respuesta1);
+                        int secomunico = respuesta.nreInput.Length != 0 ? 0 : 1;
+                        meBase.ComunicarBD_C901(Poli, ntrabajo, Fe, "40", secomunico, respuesta.nreInput);
+                        if (secomunico == 1)
+                        {
+                            log = log + comunicar_GEO(Poli, nRgnf);
+                        }
+                        }
+                }
+                catch (Exception ex)
+                {
+                    log = log + "ERROR AL SERIALIZAR RESPUESTA " + ex.Message;
+                }
+            }
+            else
+            {
+                log = log + "ERROR AL CONSTRUIR OBJETO";
+            }
+            return log;
+        }
+        public string Com42_43(string Poli, DateTime Fe, string ntrabajo, string OT, DateTime feCliente, String nRgnf)
+        {
+            //CONTROLADO 26-03-2021
+            string log = "Poliza " + Poli + " Tipo trabajo:" + OT.ToString() + " - Fecha: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + "\n";
+            OT42_43 o42_43 = meBase.GENERAR_OT_42_43(Poli, Fe, ntrabajo, feCliente, OT);
+            if (o42_43 != null)
+            {
+                ComunicarSGC funcion = new ComunicarSGC();
+                log = log + "Envio: " + JsonConvert.SerializeObject(o42_43, Formatting.None).ToString();
+                string respuesta1 = funcion.comunicarOT42_43_SGC(o42_43, OT);
+                log = log + "\n Respuesta: " + respuesta1;
+                if (respuesta1 != "" && respuesta1 != "--")
+                {
+                    try
+                    {
+                        ErrorSGC respuesta = JsonConvert.DeserializeObject<ErrorSGC>(respuesta1);
+                        int secomunico = respuesta.nreInput.Length != 0 ? 0 : 1;
+                        meBase.ComunicarBD_C901(Poli, ntrabajo, Fe, OT, secomunico, respuesta.nreInput);
+                        if (secomunico == 1)
+                        {
+                            log = log + comunicar_GEO(Poli, nRgnf);
+                            try {
+                            log = log + meBase.ComunicarMedidorAlmacen(Convert.ToDecimal(o42_43.numeroColoMac), Poli);
+                            } catch(Exception ex) {
+                                log = log + "Error: " + ex.Message;
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        log = log + "ERROR AL SERIALIZAR RESPUESTA " + ex.Message;
+                    }
+                }
+            }
+            else
+            {
+                log = log + "ERROR AL CONSTRUIR OBJETO";
+            }
+            return log;
+        }
         public string Com45(string Poli, DateTime Fe, string ntrabajo, DateTime feCliente, String nRgnf)
         {
             string log = "Poliza " + Poli + " Tipo trabajo:45 - Fecha: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + "\n";
@@ -244,104 +382,6 @@ namespace ComunicacionSGC_NET.Funtions
             }
             return log;
         }
-
-        public string Com37(string Poli, DateTime Fe, string ntrabajo, DateTime feCliente, String nRgnf)
-        {
-            string log = "Poliza " + Poli + " Tipo trabajo:37 - Fecha: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + "\n";
-            OT37_39_40 o37 = meBase.GENERAR_OT_37(Poli, Fe, ntrabajo, feCliente);
-            if (o37 != null)
-            {
-                ComunicarSGC funcion = new ComunicarSGC();
-                log = log + "Envio: " + JsonConvert.SerializeObject(o37, Formatting.None).ToString();
-                string respuesta1 = funcion.comunicarOT37_SGC(o37);
-                log = log + "\n Respuesta: " + respuesta1;
-                if (respuesta1 != "" && respuesta1 != "--")
-                {
-                    try
-                    {
-                        ErrorSGC respuesta = JsonConvert.DeserializeObject<ErrorSGC>(respuesta1);
-                        int secomunico = respuesta.nreInput.Length != 0 ? 0 : 1;
-                        meBase.ComunicarBD_C901(Poli, ntrabajo, Fe, "37", secomunico, respuesta.nreInput);
-                        if (secomunico == 1)
-                            log = log + "\n" + comunicar_GEO(Poli, nRgnf);
-                    }
-                    catch (Exception ex)
-                    {
-                        log = log + "ERROR AL SERIALIZAR RESPUESTA " + ex.Message;
-                    }
-                }
-            }
-            else
-            {
-                log = log + "ERROR AL CONSTRUIR OBJETO";
-            }
-            return log;
-        }
-        public string Com39(string Poli, DateTime Fe, string ntrabajo, DateTime feCliente, String nRgnf)
-        {
-            string log = "Poliza " + Poli + " Tipo trabajo:39 - Fecha: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + "\n";
-            OT37_39_40 o39 = meBase.GENERAR_OT_39(Poli, Fe, ntrabajo, feCliente);
-            if (o39 != null)
-            {
-                try
-                {
-                    ComunicarSGC funcion = new ComunicarSGC();
-                    log = log + "Envio: " + JsonConvert.SerializeObject(o39, Formatting.None).ToString();
-                    string respuesta1 = funcion.comunicarOT39_SGC(o39);
-                    log = log + "\n Respuesta: " + respuesta1;
-                    if (respuesta1 != "" && respuesta1 != "--")
-                    {
-                        ErrorSGC respuesta = JsonConvert.DeserializeObject<ErrorSGC>(respuesta1);
-                        int secomunico = respuesta.nreInput.Length != 0 ? 0 : 1;
-                        meBase.ComunicarBD_C901(Poli, ntrabajo, Fe, "39", secomunico, respuesta.nreInput);
-                        if (secomunico == 1)
-                            log = log + "\n" + comunicar_GEO(Poli, nRgnf);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    log = log + "ERROR AL SERIALIZAR RESPUESTA " + ex.Message;
-                }
-            }
-            else
-            {
-                log = log + "ERROR AL CONSTRUIR OBJETO";
-            }
-            return log;
-        }
-        public string Com40(string Poli, DateTime Fe, string ntrabajo, DateTime feCliente, String nRgnf)
-        {
-            string log = "Poliza " + Poli + " Tipo trabajo:40 - Fecha: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + "\n";
-            OT37_39_40 o40 = meBase.GENERAR_OT_40(Poli, Fe, ntrabajo, feCliente);
-            if (o40 != null)
-            {
-                try
-                {
-                    ComunicarSGC funcion = new ComunicarSGC();
-                    log = log + "Envio: " + JsonConvert.SerializeObject(o40, Formatting.None).ToString();
-                    string respuesta1 = funcion.comunicarOT40_SGC(o40);
-                    log = log + "\n Respuesta: " + respuesta1;
-                    if (respuesta1 != "" && respuesta1 != "--")
-                    {
-                        ErrorSGC respuesta = JsonConvert.DeserializeObject<ErrorSGC>(respuesta1);
-                        int secomunico = respuesta.nreInput.Length != 0 ? 0 : 1;
-                        meBase.ComunicarBD_C901(Poli, ntrabajo, Fe, "40", secomunico, respuesta.nreInput);
-                        if (secomunico == 1)
-                            log = log + "\n" + comunicar_GEO(Poli, nRgnf);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    log = log + "ERROR AL SERIALIZAR RESPUESTA " + ex.Message;
-                }
-            }
-            else
-            {
-                log = log + "ERROR AL CONSTRUIR OBJETO";
-            }
-            return log;
-        }
-
         #endregion
 
         #region "SUSPENDIDAS"
@@ -452,41 +492,7 @@ namespace ComunicacionSGC_NET.Funtions
 
         #endregion
 
-        public string Com42_43(string Poli, DateTime Fe, string ntrabajo, string OT, DateTime feCliente, String nRgnf)
-        {
-            //CONTROLADO 26-03-2021
-            string log = "Poliza " + Poli + " Tipo trabajo:" + OT.ToString() + " - Fecha: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + "\n";
-            OT42_43 o42_43 = meBase.GENERAR_OT_42_43(Poli, Fe, ntrabajo, feCliente,OT);
-            if (o42_43 != null)
-            {
-                ComunicarSGC funcion = new ComunicarSGC();
-                log = log + "Envio: " + JsonConvert.SerializeObject(o42_43, Formatting.None).ToString();
-                string respuesta1 = funcion.comunicarOT42_43_SGC(o42_43, OT);
-                log = log + "\n Respuesta: " + respuesta1;
-                if (respuesta1 != "" && respuesta1 != "--")
-                {
-                    try
-                    {
-                        ErrorSGC respuesta = JsonConvert.DeserializeObject<ErrorSGC>(respuesta1);
-                        int secomunico = respuesta.nreInput.Length != 0 ? 0 : 1;
-                        if (secomunico == 1)
-                        {
-                            log = log + comunicar_GEO(Poli, nRgnf);
-                                                    }
-                        meBase.ComunicarBD_C901(Poli, ntrabajo, Fe, OT, secomunico, respuesta.nreInput);
-                    }
-                    catch (Exception ex)
-                    {
-                        log = log + "ERROR AL SERIALIZAR RESPUESTA " + ex.Message;
-                    }
-                }
-            }
-            else
-            {
-                log = log + "ERROR AL CONSTRUIR OBJETO";
-            }
-            return log;
-        }
+        
 
 
 
