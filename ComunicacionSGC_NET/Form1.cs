@@ -66,7 +66,7 @@ namespace ComunicacionSGC_NET
             string mensaje = "";
             string separador = "\n###############################################################\n";
             string fichero = @"C:\LOGCOMUNICACION\" + DateTime.Now.ToString("dd-MM-yyyy") + @"\";
-            string archivo = "";
+            //string archivo = "";
             if (Directory.Exists(fichero) == false)
             {
                 Directory.CreateDirectory(fichero);

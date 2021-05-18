@@ -169,8 +169,8 @@ namespace ComunicacionSGC_NET.Funtions
             }
         }
         public string ComunicarMedidorAlmacen(decimal NSERIE, string POLIZA)
-                    {
-            string resultado = "Se cambio el estado del medidor " + NSERIE + " utilizado en poliza " + POLIZA;
+        {
+            string resultado = "";
             SqlConnection con1 = new SqlConnection(cadena.Almacen);
             con1.Open();
             try
@@ -182,15 +182,17 @@ namespace ComunicacionSGC_NET.Funtions
                 comando1.Parameters.Add(new SqlParameter("D2", DateTime.Now));
                 comando1.Parameters.Add(new SqlParameter("D3", "0"));
                 comando1.Parameters.Add(new SqlParameter("E1", NSERIE));
-                comando1.ExecuteNonQuery();
+                int i = comando1.ExecuteNonQuery();
+                if (i == 1) { resultado = "Se cambio el estado del medidor " + NSERIE + " utilizado en poliza " + POLIZA; } else { resultado = "No se cambio el estado del medidor " + NSERIE + " utilizado en poliza " + POLIZA; }
             }
             catch (Exception ex)
             {
-                resultado = "Ocurrio un error al actualizar el medidor " + NSERIE + "\n Error: \n" + ex.Message + "\n";
+                resultado = "Ocurrio un error al actualizar el medidor " + NSERIE + "\r\n Error: \r\n" + ex.Message + "\r\n";
 
             }
-            finally { 
-            con1.Close();
+            finally
+            {
+                con1.Close();
             }
             return resultado;
         }
@@ -428,329 +430,12 @@ namespace ComunicacionSGC_NET.Funtions
 
         #endregion
         #region "Generador de ot Utilizacion"
-        //implementadas desde el 15/02/2021
-        public OT45 GENERAR_OT_45(string poliza, DateTime fe, string ngnf, DateTime feCliente)
-        {
-            SqlConnection CNN = new SqlConnection(cadena.integrla);
-            SqlDataReader dt = null;
-            OT45 OT45C = new OT45();
-            try
-            {
-                CNN.Open();
-                SqlCommand ADT = new SqlCommand("SELECT TIPO_TRAB901,PARTE901, REALIZO901, FREALIZADO901, OBSERV901,ESTADORET901, FIRMO901, FE_EMISION901,NGNF901, CTAREA901,CONFORME901,USGC901 FROM C901_UTILIZACION WHERE (C901_UTILIZACION.PARTE901 = @D1) AND (C901_UTILIZACION.TIPO_TRAB901='45') AND (C901_UTILIZACION.FE_EMISION901=@D2)AND (C901_UTILIZACION.NGNF901=@D3) ORDER BY C901_UTILIZACION.PARTE901", CNN);
-                ADT.Parameters.AddWithValue("D1", poliza);
-                ADT.Parameters.AddWithValue("D2", fe);
-                ADT.Parameters.AddWithValue("D3", ngnf);
-                dt = ADT.ExecuteReader();
-                if (dt.Read())
-                {
-                    OT45C.polExpMac = int.Parse(poliza);
-                    OT45C.agenteMac = 0;
-                    OT45C.contrataMac = 768;
-                    OT45C.identPolExpMac = "P";
-                    // OT45C.nusuarioMac = dt.GetString(11);
-                    OT45C.nusuarioMac = "EXT0002";
-                    if (dt.GetString(2) == "R")
-                    {
-                        OT45C.resultadoMac = 1;
-                        OT45C.firmoCteMac = dt.GetString(6);
-                        try
-                        {
-                            OT45C.confCteMac = dt.GetString(10);
-                        }
-                        catch
-                        {
-
-                            OT45C.confCteMac = "SI";
-                        }
-                    }
-                    else
-                    {
-                        OT45C.resultadoMac = 2;
-                        // OT45C.firmoCteMac = dt.GetString(6);
-                        //OT45C.confCteMac = dt.GetString(10);
-                        OT45C.firmoCteMac = "NO";
-                        OT45C.confCteMac = "NO";
-                        for (int cv = 0; cv <= 3; cv++)
-                        {
-                            OT45C.cdVivMac.Add((cv + 1).ToString().PadLeft(2, '0'));
-                            OT45C.colorMac.Add(".".PadLeft(15, ' '));
-                            OT45C.materialMac.Add(".".PadLeft(15, ' '));
-                        }
-                    }
-                    string obs = dt.GetString(4).ToUpper();
-                    // DateTime fer = dt.GetDateTime(3);
-                    if (dt.GetDateTime(3) > feCliente)
-                    {
-                        OT45C.feRealizaMac = dt.GetDateTime(3).ToString("yyyyMMdd");
-                        OT45C.hoRealizMac = float.Parse(dt.GetDateTime(3).ToString("HHmm"));
-                    }
-                    else
-                    {
-                        OT45C.feRealizaMac = feCliente.ToString("yyyyMMdd");
-                        OT45C.hoRealizMac = 00;
-                        if (obs.Length != 0)
-                        {
-                            obs = obs + "- FECHA REAL " + dt.GetDateTime(3).ToString("dd/MM/yyyy HH:mm");
-                        }
-                        else
-                        {
-                            obs = "FECHA REAL " + dt.GetDateTime(3).ToString("dd/MM/yyyy HH:mm");
-                        }
-                    }
-                    OT45C.observNuevaMac = ObsGas(obs);
-                    if (dt.GetValue(5) == null)
-                    {
-                        OT45C.lecturaMac = 0;
-                    }
-                    else
-                    {
-                        try
-                        {
-                            OT45C.lecturaMac = float.Parse(dt.GetString(5));
-                        }
-                        catch
-                        {
-                            OT45C.lecturaMac = 0;
-                        }
-                    }
-                    OT45C.anexosMac = obtenerAnexos(poliza, "45", ngnf, (DateTime)dt.GetDateTime(3), fe);
-                    for (int cv = OT45C.colorMac.Count; cv <= 9; cv++)
-                    {
-                        OT45C.cdVivMac.Add("00");
-                        OT45C.colorMac.Add("".PadLeft(15, ' '));
-                        OT45C.materialMac.Add("".PadLeft(15, ' '));
-                    }
-                    for (int cv = OT45C.anexosMac.Count; cv <= 9; cv++)
-                    {
-                        OT45C.anexosMac.Add("  ");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                OT45C = null;
-                //MessageBox.Show(ex.Message + "\n OT45");
-            }
-            finally
-            {
-                CNN.Close();
-            }
-            return OT45C;
-        }
-        //implementada 23/02/2021
-        public OT49 GENERAR_OT_49(string poliza, DateTime fe, string ngnf, DateTime feCliente)
-        {
-            SqlConnection CNN = new SqlConnection(cadena.integrla);
-            SqlDataReader dt = null;
-            OT49 OT49C = new OT49();
-            //try
-            //{
-            CNN.Open();
-            SqlCommand ADT = new SqlCommand("SELECT C901_UTILIZACION.REALIZO901, C901_UTILIZACION.FREALIZADO901, C901_UTILIZACION.OBSERV901, C900_TAREAS.NMEDIDOR900, C900_TAREAS.CAPACIDAD900, C900_TAREAS.MARCA900,  C901_UTILIZACION.ESTADORET901,C900_TAREAS.ESFMED900, C901_UTILIZACION.FIRMO901, C901_UTILIZACION.CONFORME901,C901_UTILIZACION.USGC901 FROM C901_UTILIZACION INNER JOIN C900_TAREAS ON C901_UTILIZACION.CCONT901 = C900_TAREAS.CCONT900 AND C901_UTILIZACION.TIPO_TRAB901 = C900_TAREAS.TIPO_TRAB900 AND C901_UTILIZACION.NGNF901 = C900_TAREAS.NGNF900 AND  C901_UTILIZACION.PARTE901 = C900_TAREAS.NPARTE900 AND C901_UTILIZACION.FE_EMISION901 = C900_TAREAS.FE_EMISION900 WHERE (C901_UTILIZACION.PARTE901 = @D1) AND (C901_UTILIZACION.TIPO_TRAB901 = N'49') AND (C901_UTILIZACION.FE_EMISION901 = @D2) AND (C901_UTILIZACION.NGNF901 = @D3) ORDER BY C901_UTILIZACION.PARTE901", CNN);
-            ADT.Parameters.AddWithValue("D1", poliza);
-            ADT.Parameters.AddWithValue("D2", fe);
-            ADT.Parameters.AddWithValue("D3", ngnf);
-            dt = ADT.ExecuteReader();
-            if (dt.Read())
-            {
-                OT49C.polExpMac = int.Parse(poliza);
-                OT49C.agenteMac = 0;
-                OT49C.contrataMac = 768;
-                OT49C.identPolExpMac = "P";
-                //OT49C.nusuarioMac = dt.GetString(10);
-                OT49C.nusuarioMac = "EXT0002";
-                if (dt.GetString(0) == "R")
-                {
-                    OT49C.resultadoMac = 1;
-                    OT49C.numeroColoMac = dt.GetString(3);
-                    OT49C.capacColoMac = dt.GetString(4);
-                    OT49C.marcaColoMac = dt.GetString(5);
-                    try { 
-                    OT49C.unidMedContColoMac = dt.GetInt32(7); ;
-                    } catch {
-                        OT49C.unidMedContColoMac = 5;
-                    }
-                    if (dt.GetValue(6) == null)
-                    {
-                        OT49C.estadoColoMac = 0;
-                    }
-                    else
-                    {
-                        if (dt.GetString(6) == "")
-                        {
-                            OT49C.estadoColoMac = 0;
-                        }
-                        else
-                        {
-                            OT49C.estadoColoMac = float.Parse(dt.GetString(6));
-                        }
-                    }
-                }
-                else
-                {
-                    OT49C.resultadoMac = 2;
-                }
-                OT49C.firmoCteMac = dt.GetString(8);
-                try
-                {
-                    OT49C.confCteMac = dt.GetString(9);
-                }
-                catch
-                {
-                    OT49C.confCteMac = "SI";
-                }
-                string obs = dt.GetString(2).ToUpper();
-                if (dt.GetDateTime(1) > feCliente)
-                {
-                    OT49C.feRealizaMac = dt.GetDateTime(1).ToString("yyyyMMdd");
-                    OT49C.hoRealizMac = float.Parse(dt.GetDateTime(1).ToString("HHmm"));
-                }
-                else
-                {
-                    OT49C.feRealizaMac = feCliente.ToString("yyyyMMdd");
-                    OT49C.hoRealizMac = 00;
-                    if (obs.Length != 0)
-                    {
-                        obs = obs + "- FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
-                    }
-                    else
-                    {
-                        obs = "FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
-                    }
-                }
-                OT49C.observNuevaMac = ObsGas(obs);
-                OT49C.anexosMac = obtenerAnexos(poliza, "49", ngnf, (DateTime)dt.GetDateTime(1), fe);
-                OT49C.observCepo = " ".PadLeft(50, ' ');
-                OT49C.cepo = obtenerTipoCierre(poliza, "49", ngnf, (DateTime)dt.GetDateTime(1), fe);
-                for (int cv = OT49C.anexosMac.Count; cv <= 9; cv++)
-                {
-                    OT49C.anexosMac.Add("  ");
-                }
-            }
-            //}
-            //catch (Exception ex)
-            //{
-            //    OT49C = null;
-            //    //   MessageBox.Show(ex.Message + "\n Error en generar  OT49");
-            //}
-            //finally
-            //{
-            CNN.Close();
-            //}
-            return OT49C;
-        }
-        public OT46 GENERAR_OT_46(string poliza, DateTime fe, string ngnf, DateTime feCliente)
-        {
-            SqlConnection CNN = new SqlConnection(cadena.integrla);
-            SqlDataReader dt = null;
-            OT46 OT46C = new OT46();
-            try
-            {
-                CNN.Open();
-                SqlCommand ADT = new SqlCommand("SELECT REALIZO901, FREALIZADO901, OBSERV901, ESTADORET901, FIRMO901, CONFORME901, USGC901 FROM C901_UTILIZACION WHERE (PARTE901 = @D1) AND (TIPO_TRAB901 = '46') AND (FE_EMISION901 = @D2) AND (NGNF901 = @D3) ORDER BY PARTE901", CNN);
-                ADT.Parameters.AddWithValue("D1", poliza);
-                ADT.Parameters.AddWithValue("D2", fe);
-                ADT.Parameters.AddWithValue("D3", ngnf);
-                dt = ADT.ExecuteReader();
-                if (dt.Read())
-                {
-                    OT46C.polExpMac = int.Parse(poliza);
-                    OT46C.contrataMac = 768;
-                    OT46C.agenteMac = 0;
-                    OT46C.identPolExpMac = "P";
-                    //OT46C.nusuarioMac = dt.GetString(6);
-                    OT46C.nusuarioMac = "EXT0002";
-                    OT46C.firmoCteMac = dt.GetString(4);
-                    try
-                    {
-                        OT46C.confCteMac = dt.GetString(5);
-                    }
-                    catch
-                    {
-                        OT46C.confCteMac = "SI";
-                    }
-                    if (dt.GetString(0) == "R")
-                    {
-                        OT46C.resultadoMac = 1;
-                        if (dt.GetValue(3) == null)
-                        {
-                            OT46C.estadoRetiMac = 0;
-                        }
-                        else
-                        {
-                            if (dt.GetString(3) == "")
-                            {
-                                OT46C.estadoRetiMac = 0;
-                            }
-                            else
-                            {
-                                OT46C.estadoRetiMac = float.Parse(dt.GetString(3));
-                            }
-                        }
-                    }
-                    else
-                    {
-                        OT46C.resultadoMac = 2;
-                        for (int cv = 0; cv <= 3; cv++)
-                        {
-                            OT46C.cdVivMac.Add((cv + 1).ToString().PadLeft(2, '0'));
-                            OT46C.colorMac.Add(".".PadLeft(15, ' '));
-                            OT46C.materialMac.Add(".".PadLeft(15, ' '));
-                        }
-                    }
-                    string obs = dt.GetString(2).ToUpper();
-                    if (dt.GetDateTime(1) > feCliente)
-                    {
-                        OT46C.feRealizaMac = dt.GetDateTime(1).ToString("yyyyMMdd");
-                        OT46C.hoRealizMac = float.Parse(dt.GetDateTime(1).ToString("HHmm"));
-                    }
-                    else
-                    {
-                        OT46C.feRealizaMac = feCliente.ToString("yyyyMMdd");
-                        OT46C.hoRealizMac = 00;
-                        if (obs.Length != 0)
-                        {
-                            obs = obs + "- FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
-                        }
-                        else
-                        {
-                            obs = "FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
-                        }
-                    }
-                    OT46C.observNuevaMac = ObsGas(obs);
-                    OT46C.anexosMac = obtenerAnexos(poliza, "46", ngnf, (DateTime)dt.GetDateTime(1), fe);
-                    for (int cv = OT46C.anexosMac.Count; cv <= 9; cv++)
-                    {
-                        OT46C.anexosMac.Add("  ");
-                    }
-                    for (int cv = OT46C.cdVivMac.Count; cv <= 9; cv++)
-                    {
-                        OT46C.cdVivMac.Add("00");
-                        OT46C.colorMac.Add("".PadLeft(15, ' '));
-                        OT46C.materialMac.Add("".PadLeft(15, ' '));
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                OT46C = null;
-                // MessageBox.Show(ex.Message + "\n Error en generar OT46");
-            }
-            finally
-            {
-                CNN.Close();
-            }
-            return OT46C;
-        }
-
-        //implementadas 23/03/2021
         public OT28 GENERAR_OT_28(string poliza, DateTime fe, string ngnf, DateTime feCliente)
         {
             //modificado 13-11-2020 trae usuario de SGC
             SqlConnection CNN = new SqlConnection(cadena.integrla);
-            DataTable dt = new DataTable();
-            SqlDataReader lector;
+            //DataTable dt = new DataTable();
+            SqlDataReader dt;
             OT28 OT28C = new OT28();
             try
             {
@@ -759,23 +444,23 @@ namespace ComunicacionSGC_NET.Funtions
                 ADT.Parameters.AddWithValue("D1", poliza);
                 ADT.Parameters.AddWithValue("D2", fe);
                 ADT.Parameters.AddWithValue("D3", ngnf);
-                lector = ADT.ExecuteReader();
-                if (lector.Read())
+                dt = ADT.ExecuteReader();
+                if (dt.Read())
                 {
                     OT28C.polExpMac = int.Parse(poliza);
                     OT28C.identPolExpMac = "P";
                     OT28C.contrataMac = 768;
                     // OT28C.nusuarioMac = lector.GetString(13);
                     OT28C.nusuarioMac = "EXT0002";
-                    if (lector.GetString(0) == "R")
+                    if (dt.GetString(0) == "R")
                     {
-                        OT28C.resultadoMac = obtenerAprobadoRechazado(lector.GetString(5), "001");
+                        OT28C.resultadoMac = obtenerAprobadoRechazado(dt.GetString(5), "001");
                     }
                     else
                     {
                         OT28C.resultadoMac = 13;
                     }
-                    if (lector.GetString(6) != "")
+                    if (dt.GetString(6) != "")
                     {
                         OT28C.instaloMedMac = "SI";
                     }
@@ -785,7 +470,7 @@ namespace ComunicacionSGC_NET.Funtions
                     }
                     try
                     {
-                        OT28C.firmoCteMac = lector.GetString(4);
+                        OT28C.firmoCteMac = dt.GetString(4);
                     }
                     catch
                     {
@@ -793,37 +478,46 @@ namespace ComunicacionSGC_NET.Funtions
                     }
                     try
                     {
-                        OT28C.confCteMac = lector.GetString(12);
+                        OT28C.confCteMac = dt.GetString(12);
                     }
                     catch
                     {
                         OT28C.confCteMac = "SI";
                     }
-                    string obs = lector.GetString(2).ToUpper();
-                    if (lector.GetDateTime(1) > feCliente)
+                    string obs = dt.GetString(2).ToUpper();
+                    if (dt.GetDateTime(1) > feCliente)
                     {
-                        OT28C.feRealizaMac = lector.GetDateTime(1).ToString("yyyyMMdd");
-                        OT28C.hoRealizMac = float.Parse(lector.GetDateTime(1).ToString("HHmm"));
+
+                        OT28C.feRealizaMac = dt.GetDateTime(1).ToString("yyyyMMdd");
+                        if (int.Parse(dt.GetDateTime(1).ToString("HHmm")) > int.Parse(feCliente.ToString("HHmm")))
+                        {
+                            OT28C.hoRealizMac = float.Parse(dt.GetDateTime(1).ToString("HHmm"));
+
+                        }
+                        else
+                        {
+                            OT28C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
+                        }
                     }
                     else
                     {
                         OT28C.feRealizaMac = feCliente.ToString("yyyyMMdd");
-                        OT28C.hoRealizMac = 00;
+                        OT28C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
                         if (obs.Length != 0)
                         {
-                            obs = obs + "- FECHA REAL " + lector.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
+                            obs = obs + "- FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
                         }
                         else
                         {
-                            obs = "FECHA REAL " + lector.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
+                            obs = "FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
                         }
                     }
                     OT28C.observNuevaMac = ObsGas(obs);
-                    OT28C.agenteMac = float.Parse(lector.GetValue(11).ToString());
+                    OT28C.agenteMac = float.Parse(dt.GetValue(11).ToString());
                     // traio los codigos anexos
-                    OT28C.anexosMac = obtenerAnexos(poliza.ToString(), "28", ngnf, (DateTime)lector.GetDateTime(1), fe);
+                    OT28C.anexosMac = obtenerAnexos(poliza.ToString(), "28", ngnf, (DateTime)dt.GetDateTime(1), fe);
                     // artegactos
-                    OT28C.codRechaMac = obtenerCodRechazo(poliza.ToString(), "28", ngnf, (DateTime)lector.GetDateTime(1), fe);
+                    OT28C.codRechaMac = obtenerCodRechazo(poliza.ToString(), "28", ngnf, (DateTime)dt.GetDateTime(1), fe);
                     List<artefacto> artefatos = obtenerArtefactos(poliza.ToString(), "28", ngnf, fe);
                     foreach (artefacto item in artefatos)
                     {
@@ -867,7 +561,7 @@ namespace ComunicacionSGC_NET.Funtions
         {
             //modificado 13-11-2020 - tare usuario sgc
             SqlConnection CNN = new SqlConnection(cadena.integrla);
-            SqlDataReader lector = null;
+            SqlDataReader dt = null;
             OT33_34 OT33_34C = new OT33_34();
             try
             {
@@ -877,11 +571,11 @@ namespace ComunicacionSGC_NET.Funtions
                 ADT.Parameters.AddWithValue("D1", ot);
                 ADT.Parameters.AddWithValue("D2", fe);
                 ADT.Parameters.AddWithValue("D3", ngnf);
-                lector = ADT.ExecuteReader();
-                if (lector.Read())
+                dt = ADT.ExecuteReader();
+                if (dt.Read())
                 {
                     OT33_34C.polExpMac = int.Parse(poliza);
-                    OT33_34C.agenteMac = lector.GetInt32(8);
+                    OT33_34C.agenteMac = dt.GetInt32(8);
                     OT33_34C.nusuarioMac = "EXT0002";
                     //OT33_34C.nusuarioMac = lector.GetString(11);
                     OT33_34C.contrataMac = 768;
@@ -889,7 +583,7 @@ namespace ComunicacionSGC_NET.Funtions
                     //COMPLETO FIRMO
                     try
                     {
-                        OT33_34C.firmoCteMac = lector.GetString(3);
+                        OT33_34C.firmoCteMac = dt.GetString(3);
                     }
                     catch
                     {
@@ -898,15 +592,15 @@ namespace ComunicacionSGC_NET.Funtions
                     //COMPLETO CONFORME
                     try
                     {
-                        OT33_34C.confCteMac = lector.GetString(10);
+                        OT33_34C.confCteMac = dt.GetString(10);
                     }
                     catch
                     {
                         OT33_34C.confCteMac = "SI";
                     }
-                    if (lector.GetString(0) == "R")
+                    if (dt.GetString(0) == "R")
                     {
-                        OT33_34C.resultadoMac = obtenerAprobadoRechazado(lector.GetString(9), "001");
+                        OT33_34C.resultadoMac = obtenerAprobadoRechazado(dt.GetString(9), "001");
                         //SI ESTA REACHAZA PASO VACIO
                         if (OT33_34C.resultadoMac == 14)
                         {
@@ -915,7 +609,7 @@ namespace ComunicacionSGC_NET.Funtions
                         else
                         {
                             //PREGUNTO SI SE CAMBIO MEDIDOR
-                            if (lector.GetString(6) != "")
+                            if (dt.GetString(6) != "")
                             {
                                 OT33_34C.recolocoCambioMac = "S";
                             }
@@ -930,29 +624,35 @@ namespace ComunicacionSGC_NET.Funtions
                         OT33_34C.resultadoMac = 13;
                         OT33_34C.recolocoCambioMac = " ";
                     }
-                    string obs = lector.GetString(2).ToUpper();
-                    if (lector.GetDateTime(1) > feCliente)
+                    string obs = dt.GetString(2).ToUpper();
+                    if (dt.GetDateTime(1) > feCliente)
                     {
-
-                        OT33_34C.feRealizaMac = lector.GetDateTime(1).ToString("yyyyMMdd");
-                        OT33_34C.hoRealizMac = float.Parse(lector.GetDateTime(1).ToString("HHmm"));
+                        OT33_34C.feRealizaMac = dt.GetDateTime(1).ToString("yyyyMMdd");
+                        if (int.Parse(dt.GetDateTime(1).ToString("HHmm")) > int.Parse(feCliente.ToString("HHmm")))
+                        {
+                            OT33_34C.hoRealizMac = float.Parse(dt.GetDateTime(1).ToString("HHmm"));
+                        }
+                        else
+                        {
+                            OT33_34C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
+                        }
                     }
                     else
                     {
                         OT33_34C.feRealizaMac = feCliente.ToString("yyyyMMdd");
-                        OT33_34C.hoRealizMac = 0;
+                        OT33_34C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
                         if (obs.Length != 0)
                         {
-                            obs = obs + "- FECHA REAL " + lector.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
+                            obs = obs + "- FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
                         }
                         else
                         {
-                            obs = "FECHA REAL " + lector.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
+                            obs = "FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
                         }
                     }
                     OT33_34C.observNuevaMac = ObsGas(obs);
-                    OT33_34C.anexosMac = obtenerAnexos(poliza, ot, ngnf, (DateTime)lector.GetDateTime(1), fe);
-                    OT33_34C.codRechaMac = obtenerCodRechazo(poliza, ot, ngnf, (DateTime)lector.GetDateTime(1), fe);
+                    OT33_34C.anexosMac = obtenerAnexos(poliza, ot, ngnf, (DateTime)dt.GetDateTime(1), fe);
+                    OT33_34C.codRechaMac = obtenerCodRechazo(poliza, ot, ngnf, (DateTime)dt.GetDateTime(1), fe);
                     for (int COM = OT33_34C.anexosMac.Count; COM <= 9; COM++)
                     {
                         OT33_34C.anexosMac.Add("  ");
@@ -974,13 +674,11 @@ namespace ComunicacionSGC_NET.Funtions
             }
             return OT33_34C;
         }
-
-        //no aprobadas
         public OT37_39_40 GENERAR_OT_37(string poliza, DateTime fe, string ngnf, DateTime feCliente)
         {
             //modificado 13/11/2020 --> trae usuario MAC
             SqlConnection CNN = new SqlConnection(cadena.integrla);
-            SqlDataReader lector = null;
+            SqlDataReader dt = null;
             OT37_39_40 OT37C = new OT37_39_40();
             try
             {
@@ -989,24 +687,24 @@ namespace ComunicacionSGC_NET.Funtions
                 ADT.Parameters.AddWithValue("D1", poliza);
                 ADT.Parameters.AddWithValue("D2", fe);
                 ADT.Parameters.AddWithValue("D3", ngnf);
-                lector = ADT.ExecuteReader();
-                if (lector.Read())
+                dt = ADT.ExecuteReader();
+                if (dt.Read())
                 {
                     OT37C.polExpMac = int.Parse(poliza);
                     OT37C.identPolExpMac = "P";
                     OT37C.contrataMac = 768;
                     OT37C.nusuarioMac = "EXT0002";
                     // OT37C.nusuarioMac = lector.GetString(12);
-                    OT37C.firmoCteMac = lector.GetString(4);
+                    OT37C.firmoCteMac = dt.GetString(4);
                     try
                     {
-                        OT37C.confCteMac = lector.GetString(11);
+                        OT37C.confCteMac = dt.GetString(11);
                     }
                     catch
                     {
                         OT37C.confCteMac = "SI";
                     }
-                    if (lector.GetString(0) == "R")
+                    if (dt.GetString(0) == "R")
                     {
                         OT37C.resultadoMac = 1;
                     }
@@ -1020,40 +718,47 @@ namespace ComunicacionSGC_NET.Funtions
                             OT37C.materialMac.Add(".".PadLeft(15, ' '));
                         }
                     }
-                    string obs = lector.GetString(2).ToUpper();
-                    if (lector.GetDateTime(1) > feCliente)
+                    string obs = dt.GetString(2).ToUpper();
+                    if (dt.GetDateTime(1) > feCliente)
                     {
-                        OT37C.feRealizaMac = lector.GetDateTime(1).ToString("yyyyMMdd");
-                        OT37C.hoRealizMac = float.Parse(lector.GetDateTime(1).ToString("HHmm"));
+                        OT37C.feRealizaMac = dt.GetDateTime(1).ToString("yyyyMMdd");
+                        if (int.Parse(dt.GetDateTime(1).ToString("HHmm")) > int.Parse(feCliente.ToString("HHmm")))
+                        {
+                            OT37C.hoRealizMac = float.Parse(dt.GetDateTime(1).ToString("HHmm"));
+                        }
+                        else
+                        {
+                            OT37C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
+                        }
                     }
                     else
                     {
                         OT37C.feRealizaMac = feCliente.ToString("yyyyMMdd");
-                        OT37C.hoRealizMac = 0;
+                        OT37C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
                         if (obs.Length != 0)
                         {
-                            obs = obs + "- FECHA REAL " + lector.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
+                            obs = obs + "- FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
                         }
                         else
                         {
-                            obs = "FECHA REAL " + lector.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
+                            obs = "FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
                         }
                     }
                     OT37C.observNuevaMac = ObsGas(obs);
-                    if (lector.GetValue(3) == null)
+                    if (dt.GetValue(3) == null)
                     {
                         OT37C.estaRetiMac = 0;
                     }
                     else
                     {
-                        if (lector.GetString(3) != "")
+                        if (dt.GetString(3) != "")
                         {
-                            OT37C.estaRetiMac = float.Parse(lector.GetString(3));
+                            OT37C.estaRetiMac = float.Parse(dt.GetString(3));
                         }
                         else { OT37C.estaRetiMac = 0; }
                     }
-                    OT37C.cantHabitantesMac = lector.GetInt32(7);
-                    OT37C.intensidadEscapeMac = lector.GetString(8);
+                    OT37C.cantHabitantesMac = dt.GetInt32(7);
+                    OT37C.intensidadEscapeMac = dt.GetString(8);
                     OT37C.direccionMac = " ".ToString().PadLeft(50, ' ');
                     OT37C.entreCallesMac = " ".ToString().PadLeft(50, ' ');
                     OT37C.localidadMac = "000";
@@ -1065,13 +770,13 @@ namespace ComunicacionSGC_NET.Funtions
                     OT37C.estadoMac = 0;
                     OT37C.escapeMac = "N";
                     // traio los codigos anexos
-                    OT37C.anexosMac = obtenerAnexos(poliza, "37", ngnf, (DateTime)lector.GetDateTime(1), fe);
+                    OT37C.anexosMac = obtenerAnexos(poliza, "37", ngnf, (DateTime)dt.GetDateTime(1), fe);
                     //COMIENZO A LLENAR LOS SI-NO
                     //1-DOMICILIO INCORRECTO -- SE PASA
                     //2-MEDIDOR NO CORRESPONDE -- SE PASA
                     //3-FUNCIONAMIENTO CORRECTO -- SE PASAS
                     //4-SE ENCONTRO ESCAPE EN CAÑERIA INTERNA -NO SE UTILIZA
-                    if (lector.GetString(0) == "R")
+                    if (dt.GetString(0) == "R")
                     {
                         //string MedidorFunciona = obtenerFuncionamedidor(poliza,"37",ngnf, (DateTime)lector.GetDateTime(1),fe);
                         //OT37C.si2Mac.Add(" ");
@@ -1079,7 +784,7 @@ namespace ComunicacionSGC_NET.Funtions
                         //OT37C.si2Mac.Add(" ");
                         //OT37C.no2Mac.Add("X");
                         //1-DOMICILIO INCORRECTO
-                        if (lector.GetString(9) == "NO")
+                        if (dt.GetString(9) == "NO")
                         {
                             OT37C.si2Mac.Add(" ");
                             OT37C.no2Mac.Add("X");
@@ -1091,7 +796,7 @@ namespace ComunicacionSGC_NET.Funtions
                             //OT37C.anexosMac.Add("61"); // NO PASO EL CODIGO ANEXO
                         }
                         //2-MEDIDOR INCORRECTO
-                        if (lector.GetString(10) == "NO")
+                        if (dt.GetString(10) == "NO")
                         {
                             OT37C.si2Mac.Add(" ");
                             OT37C.no2Mac.Add("X");
@@ -1103,7 +808,7 @@ namespace ComunicacionSGC_NET.Funtions
                             // OT37C.anexosMac.Add("60"); //NO PASO EL CODIGO ANEXO
                         }
                         //3-FUNCIONAMIENTO DE MEDIDOR
-                        if (obtenerFuncionamedidor(poliza, "37", ngnf, (DateTime)lector.GetDateTime(1), fe) == "NO")
+                        if (obtenerFuncionamedidor(poliza, "37", ngnf, (DateTime)dt.GetDateTime(1), fe) == "NO")
                         {
                             OT37C.si2Mac.Add(" ");
                             OT37C.no2Mac.Add("X");
@@ -1151,7 +856,7 @@ namespace ComunicacionSGC_NET.Funtions
         public OT37_39_40 GENERAR_OT_39(string poliza, DateTime fe, string ngnf, DateTime feCliente)
         {
             SqlConnection CNN = new SqlConnection(cadena.integrla);
-            SqlDataReader lector = null;
+            SqlDataReader dt = null;
 
             OT37_39_40 OT39C = new OT37_39_40();
             try
@@ -1161,8 +866,8 @@ namespace ComunicacionSGC_NET.Funtions
                 ADT.Parameters.AddWithValue("D1", poliza);
                 ADT.Parameters.AddWithValue("D2", fe);
                 ADT.Parameters.AddWithValue("D3", ngnf);
-                lector = ADT.ExecuteReader();
-                if (lector.Read())
+                dt = ADT.ExecuteReader();
+                if (dt.Read())
                 {
                     OT39C.polExpMac = int.Parse(poliza);
                     OT39C.identPolExpMac = "P";
@@ -1170,16 +875,16 @@ namespace ComunicacionSGC_NET.Funtions
                     OT39C.agenteMac = 0;
                     OT39C.nusuarioMac = "EXT0002";
                     //OT39C.nusuarioMac = lector.GetString(12);
-                    OT39C.firmoCteMac = lector.GetString(4);
+                    OT39C.firmoCteMac = dt.GetString(4);
                     try
                     {
-                        OT39C.confCteMac = lector.GetString(11);
+                        OT39C.confCteMac = dt.GetString(11);
                     }
                     catch
                     {
                         OT39C.confCteMac = "SI";
                     }
-                    if (lector.GetString(0) == "R")
+                    if (dt.GetString(0) == "R")
                     {
                         OT39C.resultadoMac = 1;
                     }
@@ -1193,43 +898,51 @@ namespace ComunicacionSGC_NET.Funtions
                             OT39C.materialMac.Add(".".PadLeft(15, ' '));
                         }
                     }
-                    string obs = lector.GetString(2).ToUpper();
-                    if (lector.GetDateTime(1) > feCliente)
+                    string obs = dt.GetString(2).ToUpper();
+                    if (dt.GetDateTime(1) > feCliente)
                     {
-                        OT39C.feRealizaMac = lector.GetDateTime(1).ToString("yyyyMMdd");
-                        OT39C.hoRealizMac = float.Parse(lector.GetDateTime(1).ToString("HHmm"));
+                        OT39C.feRealizaMac = dt.GetDateTime(1).ToString("yyyyMMdd");
+                        if (int.Parse(dt.GetDateTime(1).ToString("HHmm")) > int.Parse(feCliente.ToString("HHmm")))
+                        {
+                            OT39C.hoRealizMac = float.Parse(dt.GetDateTime(1).ToString("HHmm"));
+
+                        }
+                        else
+                        {
+                            OT39C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
+                        }
                     }
                     else
                     {
                         OT39C.feRealizaMac = feCliente.ToString("yyyyMMdd");
-                        OT39C.hoRealizMac = 0;
+                        OT39C.hoRealizMac = float.Parse(dt.GetDateTime(3).ToString("HHmm"));
                         if (obs.Length != 0)
                         {
-                            obs = obs + "- FECHA REAL " + lector.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
+                            obs = obs + "- FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
                         }
                         else
                         {
-                            obs = "FECHA REAL " + lector.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
+                            obs = "FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
                         }
                     }
                     OT39C.observNuevaMac = ObsGas(obs);
-                    if (lector.GetValue(3) == null)
+                    if (dt.GetValue(3) == null)
                     {
                         OT39C.estaRetiMac = 0;
                     }
                     else
                     {
-                        if (lector.GetString(3) != "")
+                        if (dt.GetString(3) != "")
                         {
-                            OT39C.estaRetiMac = float.Parse(lector.GetString(3));
+                            OT39C.estaRetiMac = float.Parse(dt.GetString(3));
                         }
                         else
                         {
                             OT39C.estaRetiMac = 0;
                         }
                     }
-                    OT39C.cantHabitantesMac = lector.GetInt32(7);
-                    OT39C.intensidadEscapeMac = lector.GetString(8);
+                    OT39C.cantHabitantesMac = dt.GetInt32(7);
+                    OT39C.intensidadEscapeMac = dt.GetString(8);
                     OT39C.direccionMac = " ".ToString().PadLeft(50, ' ');
                     OT39C.entreCallesMac = " ".ToString().PadLeft(50, ' ');
                     OT39C.localidadMac = "000";
@@ -1241,7 +954,7 @@ namespace ComunicacionSGC_NET.Funtions
                     OT39C.estadoMac = 0;
                     OT39C.escapeMac = " ";
                     // traio los codigos anexos
-                    OT39C.anexosMac = obtenerAnexos(poliza, "39", ngnf, (DateTime)lector.GetDateTime(1), fe);
+                    OT39C.anexosMac = obtenerAnexos(poliza, "39", ngnf, (DateTime)dt.GetDateTime(1), fe);
                     //LLENO LOS SI-NO
                     //1-DOMICILIO INCORRECTO
                     //2-MEDIDOR INCORRECTO
@@ -1249,10 +962,10 @@ namespace ComunicacionSGC_NET.Funtions
                     //4-SE CAMBIO MEDIDOR
                     //5-SE MODIFICO TOMA EN NICHO--NO SE UTILIZA
                     //6-SE ENCONTRO ESCAPE EN CAÑERIA INTERNA --NO SE UTILIZA
-                    if (lector.GetString(0) == "R")
+                    if (dt.GetString(0) == "R")
                     {
                         //1-DOMICILIO INCORRECTO
-                        if (lector.GetString(9) == "NO")
+                        if (dt.GetString(9) == "NO")
                         {
                             OT39C.si2Mac.Add(" ");
                             OT39C.no2Mac.Add("X");
@@ -1264,7 +977,7 @@ namespace ComunicacionSGC_NET.Funtions
                             // OT39C.anexosMac.Add("61");
                         }
                         //2-MEDIDOR INCORRECTO
-                        if (lector.GetString(10) == "NO")
+                        if (dt.GetString(10) == "NO")
                         {
                             OT39C.si2Mac.Add(" ");
                             OT39C.no2Mac.Add("X");
@@ -1276,7 +989,7 @@ namespace ComunicacionSGC_NET.Funtions
                             // OT39C.anexosMac.Add("60");
                         }
                         //3-FUNCIONAMIENTO CORRECTO
-                        if (obtenerFuncionamedidor(poliza, "39", ngnf, (DateTime)lector.GetDateTime(1), fe) == "NO")
+                        if (obtenerFuncionamedidor(poliza, "39", ngnf, (DateTime)dt.GetDateTime(1), fe) == "NO")
                         {
                             OT39C.si2Mac.Add(" ");
                             OT39C.no2Mac.Add("X");
@@ -1287,7 +1000,7 @@ namespace ComunicacionSGC_NET.Funtions
                             OT39C.no2Mac.Add(" ");
                         }
                         //4-SE CAMBIO MEDIDOR
-                        if (lector.GetString(6) != "")
+                        if (dt.GetString(6) != "")
                         {
                             OT39C.si2Mac.Add("X");
                             OT39C.no2Mac.Add(" ");
@@ -1385,13 +1098,20 @@ namespace ComunicacionSGC_NET.Funtions
                     string obs = dt.GetString(2).ToUpper();
                     if (dt.GetDateTime(1) > feCliente)
                     {
-                        OT40C.hoRealizMac = float.Parse(dt.GetDateTime(1).ToString("HHmm"));
                         OT40C.feRealizaMac = dt.GetDateTime(1).ToString("yyyyMMdd");
+                        if (int.Parse(dt.GetDateTime(1).ToString("HHmm")) > int.Parse(feCliente.ToString("HHmm")))
+                        {
+                            OT40C.hoRealizMac = float.Parse(dt.GetDateTime(1).ToString("HHmm"));
+                        }
+                        else
+                        {
+                            OT40C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
+                        }
                     }
                     else
                     {
                         OT40C.feRealizaMac = feCliente.ToString("yyyyMMdd");
-                        OT40C.hoRealizMac = 00;
+                        OT40C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
                         if (obs.Length != 0)
                         {
                             obs = obs + "- FECHA REAL " + dt.GetDateTime(3).ToString("dd/MM/yyyy HH:mm");
@@ -1489,107 +1209,6 @@ namespace ComunicacionSGC_NET.Funtions
             }
             return OT40C;
         }
-        public OT11_17_47_54 GENERAR_OT_47(string poliza, DateTime fe, string ngnf, DateTime feCliente)
-        {
-            //Modificado 13/11/2020 --> trae usuario mac
-            SqlConnection CNN = new SqlConnection(cadena.integrla);
-            SqlDataReader dt = null;
-            OT11_17_47_54 OT47C = new OT11_17_47_54();
-            try
-            {
-                CNN.Open();
-                SqlCommand ADT = new SqlCommand("SELECT TIPO_TRAB901,PARTE901, REALIZO901, FREALIZADO901, OBSERV901,ESTADORET901, FIRMO901, FE_EMISION901,NGNF901, CTAREA901,CONFORME901, USGC901 FROM C901_UTILIZACION WHERE (PARTE901 = @D1) AND (TIPO_TRAB901='47') AND (FE_EMISION901=@D2)AND (NGNF901=@D3) ORDER BY PARTE901", CNN);
-                ADT.Parameters.AddWithValue("D1", poliza);
-                ADT.Parameters.AddWithValue("D2", fe);
-                ADT.Parameters.AddWithValue("D3", ngnf);
-                dt = ADT.ExecuteReader();
-                if (dt.Read())
-                {
-                    OT47C.polExpMac = int.Parse(poliza);
-                    OT47C.agenteMac = 0;
-                    OT47C.identPolExpMac = "P";
-                    OT47C.contrataMac = 768;
-                    OT47C.nusuarioMac = dt.GetString(11);
-                    string obs = dt.GetString(4).ToUpper();
-                    if (dt.GetDateTime(3) > feCliente)
-                    {
-                        OT47C.feRealizaMac = dt.GetDateTime(3).ToString("yyyyMMdd");
-                        OT47C.hoRealizMac = float.Parse(dt.GetDateTime(3).ToString("HHmm"));
-                    }
-                    else
-                    {
-                        OT47C.feRealizaMac = feCliente.ToString("yyyyMMdd");
-                        OT47C.hoRealizMac = 00;
-                        if (obs.Length != 0)
-                        {
-                            obs = obs + "- FECHA REAL " + dt.GetDateTime(3).ToString("dd/MM/yyyy HH:mm");
-                        }
-                        else
-                        {
-                            obs = "FECHA REAL " + dt.GetDateTime(3).ToString("dd/MM/yyyy HH:mm");
-                        }
-                    }
-                    OT47C.observNuevaMac = ObsGas(obs);
-                    OT47C.anexosMac = obtenerAnexos(poliza, "47", ngnf, (DateTime)dt.GetDateTime(3), fe);
-                    OT47C.firmoCteMac = dt.GetString(6);
-                    try
-                    {
-
-                        OT47C.confCteMac = dt.GetString(10);
-
-                    }
-                    catch
-                    {
-                        OT47C.confCteMac = "SI";
-                    }
-                    if (dt.GetString(2) == "R")
-                    {
-                        OT47C.resultadoMac = 1;
-                    }
-                    else
-                    {
-                        OT47C.resultadoMac = 2;
-                        for (int cv = 0; cv <= 3; cv++)
-                        {
-                            OT47C.cdVivMac.Add((cv + 1).ToString().PadLeft(2, '0'));
-                            OT47C.colorMac.Add(".".PadLeft(15, ' '));
-                            OT47C.materialMac.Add(".".PadLeft(15, ' '));
-                        }
-                    }
-                    if (dt.GetValue(5) == null)
-                    {
-                        OT47C.estadoRetiMac = 0;
-                    }
-                    else
-                    {
-                        try { OT47C.estadoRetiMac = float.Parse(dt.GetString(5)); } catch { OT47C.estadoRetiMac = 0; }
-
-                    }
-
-                    for (int cv = OT47C.colorMac.Count; cv <= 9; cv++)
-                    {
-                        OT47C.cdVivMac.Add("00");
-                        OT47C.colorMac.Add("".PadLeft(15, ' '));
-                        OT47C.materialMac.Add("".PadLeft(15, ' '));
-                    }
-                    for (int cv = OT47C.anexosMac.Count; cv <= 9; cv++)
-                    {
-                        OT47C.anexosMac.Add("  ");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                OT47C = null;
-                MessageBox.Show(ex.Message + "\n OT47");
-            }
-            finally
-            {
-                CNN.Close();
-            }
-
-            return OT47C;
-        }
         public OT42_43 GENERAR_OT_42_43(string poliza, DateTime fe, string ngnf, DateTime feCliente, string OT)
         {
             SqlConnection CNN = new SqlConnection(cadena.integrla);
@@ -1622,10 +1241,9 @@ namespace ComunicacionSGC_NET.Funtions
                         }
                         catch
                         {
-
                             OT42_43C.confCteMac = "SI";
                         }
-                        OT42_43C.numeroColoMac = int.Parse(dt.GetString(12));
+                         OT42_43C.numeroColoMac = int.Parse(dt.GetString(12));
                         OT42_43C.estadoColoMac = int.Parse(dt.GetString(13));
                         MedColoca medidor = obtenerMedidorNaturgy(dt.GetString(12));
                         if (medidor.existe)
@@ -1661,9 +1279,6 @@ namespace ComunicacionSGC_NET.Funtions
                         OT42_43C.resultadoMac = 2;
                         OT42_43C.firmoCteMac = dt.GetString(6);
                         OT42_43C.confCteMac = dt.GetString(10);
-                        //para que siempre sean no
-                        //OT42_43C.firmoCteMac = "NO";
-                        //OT42_43C.confCteMac = "NO";
                         for (int cv = 0; cv <= 3; cv++)
                         {
                             OT42_43C.cdVivMac.Add((cv + 1).ToString().PadLeft(2, '0'));
@@ -1676,12 +1291,19 @@ namespace ComunicacionSGC_NET.Funtions
                     if (dt.GetDateTime(3) > feCliente)
                     {
                         OT42_43C.feRealizaMac = dt.GetDateTime(3).ToString("yyyyMMdd");
-                        OT42_43C.hoRealizMac = float.Parse(dt.GetDateTime(3).ToString("HHmm"));
+                        if (int.Parse(dt.GetDateTime(3).ToString("HHmm")) > int.Parse(feCliente.ToString("HHmm")))
+                        {
+                            OT42_43C.hoRealizMac = float.Parse(dt.GetDateTime(3).ToString("HHmm"));
+                        }
+                        else
+                        {
+                            OT42_43C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
+                        }
                     }
                     else
                     {
                         OT42_43C.feRealizaMac = feCliente.ToString("yyyyMMdd");
-                        OT42_43C.hoRealizMac = 00;
+                        OT42_43C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
                         if (obs.Length != 0)
                         {
                             obs = obs + "- FECHA REAL " + dt.GetDateTime(3).ToString("dd/MM/yyyy HH:mm");
@@ -1715,6 +1337,457 @@ namespace ComunicacionSGC_NET.Funtions
                 CNN.Close();
             }
             return OT42_43C;
+        }
+        public OT45 GENERAR_OT_45(string poliza, DateTime fe, string ngnf, DateTime feCliente)
+        {
+            SqlConnection CNN = new SqlConnection(cadena.integrla);
+            SqlDataReader dt = null;
+            OT45 OT45C = new OT45();
+            try
+            {
+                CNN.Open();
+                SqlCommand ADT = new SqlCommand("SELECT TIPO_TRAB901,PARTE901, REALIZO901, FREALIZADO901, OBSERV901,ESTADORET901, FIRMO901, FE_EMISION901,NGNF901, CTAREA901,CONFORME901,USGC901 FROM C901_UTILIZACION WHERE (C901_UTILIZACION.PARTE901 = @D1) AND (C901_UTILIZACION.TIPO_TRAB901='45') AND (C901_UTILIZACION.FE_EMISION901=@D2)AND (C901_UTILIZACION.NGNF901=@D3) ORDER BY C901_UTILIZACION.PARTE901", CNN);
+                ADT.Parameters.AddWithValue("D1", poliza);
+                ADT.Parameters.AddWithValue("D2", fe);
+                ADT.Parameters.AddWithValue("D3", ngnf);
+                dt = ADT.ExecuteReader();
+                if (dt.Read())
+                {
+                    OT45C.polExpMac = int.Parse(poliza);
+                    OT45C.agenteMac = 0;
+                    OT45C.contrataMac = 768;
+                    OT45C.identPolExpMac = "P";
+                    // OT45C.nusuarioMac = dt.GetString(11);
+                    OT45C.nusuarioMac = "EXT0002";
+                    if (dt.GetString(2) == "R")
+                    {
+                        OT45C.resultadoMac = 1;
+                        OT45C.firmoCteMac = dt.GetString(6);
+                        try
+                        {
+                            OT45C.confCteMac = dt.GetString(10);
+                        }
+                        catch
+                        {
+
+                            OT45C.confCteMac = "SI";
+                        }
+                    }
+                    else
+                    {
+                        OT45C.resultadoMac = 2;
+                        // OT45C.firmoCteMac = dt.GetString(6);
+                        //OT45C.confCteMac = dt.GetString(10);
+                        OT45C.firmoCteMac = "NO";
+                        OT45C.confCteMac = "NO";
+                        for (int cv = 0; cv <= 3; cv++)
+                        {
+                            OT45C.cdVivMac.Add((cv + 1).ToString().PadLeft(2, '0'));
+                            OT45C.colorMac.Add(".".PadLeft(15, ' '));
+                            OT45C.materialMac.Add(".".PadLeft(15, ' '));
+                        }
+                    }
+                    string obs = dt.GetString(4).ToUpper();
+                    // DateTime fer = dt.GetDateTime(3);
+                    if (dt.GetDateTime(3) > feCliente)
+                    {
+                        OT45C.feRealizaMac = dt.GetDateTime(3).ToString("yyyyMMdd");
+                        if (int.Parse(dt.GetDateTime(3).ToString("HHmm")) > int.Parse(feCliente.ToString("HHmm")))
+                        {
+                            OT45C.hoRealizMac = float.Parse(dt.GetDateTime(3).ToString("HHmm"));
+                        }
+                        else
+                        {
+                            OT45C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
+                        }
+                    }
+                    else
+                    {
+                        OT45C.feRealizaMac = feCliente.ToString("yyyyMMdd");
+                        OT45C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
+                        if (obs.Length != 0)
+                        {
+                            obs = obs + "- FECHA REAL " + dt.GetDateTime(3).ToString("dd/MM/yyyy HH:mm");
+                        }
+                        else
+                        {
+                            obs = "FECHA REAL " + dt.GetDateTime(3).ToString("dd/MM/yyyy HH:mm");
+                        }
+                    }
+                    OT45C.observNuevaMac = ObsGas(obs);
+                    if (dt.GetValue(5) == null)
+                    {
+                        OT45C.lecturaMac = 0;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            OT45C.lecturaMac = float.Parse(dt.GetString(5));
+                        }
+                        catch
+                        {
+                            OT45C.lecturaMac = 0;
+                        }
+                    }
+                    OT45C.anexosMac = obtenerAnexos(poliza, "45", ngnf, (DateTime)dt.GetDateTime(3), fe);
+                    for (int cv = OT45C.colorMac.Count; cv <= 9; cv++)
+                    {
+                        OT45C.cdVivMac.Add("00");
+                        OT45C.colorMac.Add("".PadLeft(15, ' '));
+                        OT45C.materialMac.Add("".PadLeft(15, ' '));
+                    }
+                    for (int cv = OT45C.anexosMac.Count; cv <= 9; cv++)
+                    {
+                        OT45C.anexosMac.Add("  ");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                OT45C = null;
+                //MessageBox.Show(ex.Message + "\n OT45");
+            }
+            finally
+            {
+                CNN.Close();
+            }
+            return OT45C;
+        }
+        public OT46 GENERAR_OT_46(string poliza, DateTime fe, string ngnf, DateTime feCliente)
+        {
+            SqlConnection CNN = new SqlConnection(cadena.integrla);
+            SqlDataReader dt = null;
+            OT46 OT46C = new OT46();
+            try
+            {
+                CNN.Open();
+                SqlCommand ADT = new SqlCommand("SELECT REALIZO901, FREALIZADO901, OBSERV901, ESTADORET901, FIRMO901, CONFORME901, USGC901 FROM C901_UTILIZACION WHERE (PARTE901 = @D1) AND (TIPO_TRAB901 = '46') AND (FE_EMISION901 = @D2) AND (NGNF901 = @D3) ORDER BY PARTE901", CNN);
+                ADT.Parameters.AddWithValue("D1", poliza);
+                ADT.Parameters.AddWithValue("D2", fe);
+                ADT.Parameters.AddWithValue("D3", ngnf);
+                dt = ADT.ExecuteReader();
+                if (dt.Read())
+                {
+                    OT46C.polExpMac = int.Parse(poliza);
+                    OT46C.contrataMac = 768;
+                    OT46C.agenteMac = 0;
+                    OT46C.identPolExpMac = "P";
+                    //OT46C.nusuarioMac = dt.GetString(6);
+                    OT46C.nusuarioMac = "EXT0002";
+                    OT46C.firmoCteMac = dt.GetString(4);
+                    try
+                    {
+                        OT46C.confCteMac = dt.GetString(5);
+                    }
+                    catch
+                    {
+                        OT46C.confCteMac = "SI";
+                    }
+                    if (dt.GetString(0) == "R")
+                    {
+                        OT46C.resultadoMac = 1;
+                        if (dt.GetValue(3) == null)
+                        {
+                            OT46C.estadoRetiMac = 0;
+                        }
+                        else
+                        {
+                            if (dt.GetString(3) == "")
+                            {
+                                OT46C.estadoRetiMac = 0;
+                            }
+                            else
+                            {
+                                OT46C.estadoRetiMac = float.Parse(dt.GetString(3));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        OT46C.resultadoMac = 2;
+                        for (int cv = 0; cv <= 3; cv++)
+                        {
+                            OT46C.cdVivMac.Add((cv + 1).ToString().PadLeft(2, '0'));
+                            OT46C.colorMac.Add(".".PadLeft(15, ' '));
+                            OT46C.materialMac.Add(".".PadLeft(15, ' '));
+                        }
+                    }
+                    string obs = dt.GetString(2).ToUpper();
+                    if (dt.GetDateTime(1) > feCliente)
+                    {
+                        OT46C.feRealizaMac = dt.GetDateTime(1).ToString("yyyyMMdd");
+                        if (int.Parse(dt.GetDateTime(1).ToString("HHmm")) > int.Parse(feCliente.ToString("HHmm")))
+                        {
+                            OT46C.hoRealizMac = float.Parse(dt.GetDateTime(1).ToString("HHmm"));
+
+                        }
+                        else
+                        {
+                            OT46C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
+                        }
+                    }
+                    else
+                    {
+                        OT46C.feRealizaMac = feCliente.ToString("yyyyMMdd");
+                        OT46C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
+                        if (obs.Length != 0)
+                        {
+                            obs = obs + "- FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
+                        }
+                        else
+                        {
+                            obs = "FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
+                        }
+                    }
+                    OT46C.observNuevaMac = ObsGas(obs);
+                    OT46C.anexosMac = obtenerAnexos(poliza, "46", ngnf, (DateTime)dt.GetDateTime(1), fe);
+                    for (int cv = OT46C.anexosMac.Count; cv <= 9; cv++)
+                    {
+                        OT46C.anexosMac.Add("  ");
+                    }
+                    for (int cv = OT46C.cdVivMac.Count; cv <= 9; cv++)
+                    {
+                        OT46C.cdVivMac.Add("00");
+                        OT46C.colorMac.Add("".PadLeft(15, ' '));
+                        OT46C.materialMac.Add("".PadLeft(15, ' '));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                OT46C = null;
+                // MessageBox.Show(ex.Message + "\n Error en generar OT46");
+            }
+            finally
+            {
+                CNN.Close();
+            }
+            return OT46C;
+        }
+        public OT49 GENERAR_OT_49(string poliza, DateTime fe, string ngnf, DateTime feCliente)
+        {
+            SqlConnection CNN = new SqlConnection(cadena.integrla);
+            SqlDataReader dt = null;
+            OT49 OT49C = new OT49();
+            //try
+            //{
+            CNN.Open();
+            SqlCommand ADT = new SqlCommand("SELECT C901_UTILIZACION.REALIZO901, C901_UTILIZACION.FREALIZADO901, C901_UTILIZACION.OBSERV901, C900_TAREAS.NMEDIDOR900, C900_TAREAS.CAPACIDAD900, C900_TAREAS.MARCA900,  C901_UTILIZACION.ESTADORET901,C900_TAREAS.ESFMED900, C901_UTILIZACION.FIRMO901, C901_UTILIZACION.CONFORME901,C901_UTILIZACION.USGC901 FROM C901_UTILIZACION INNER JOIN C900_TAREAS ON C901_UTILIZACION.CCONT901 = C900_TAREAS.CCONT900 AND C901_UTILIZACION.TIPO_TRAB901 = C900_TAREAS.TIPO_TRAB900 AND C901_UTILIZACION.NGNF901 = C900_TAREAS.NGNF900 AND  C901_UTILIZACION.PARTE901 = C900_TAREAS.NPARTE900 AND C901_UTILIZACION.FE_EMISION901 = C900_TAREAS.FE_EMISION900 WHERE (C901_UTILIZACION.PARTE901 = @D1) AND (C901_UTILIZACION.TIPO_TRAB901 = N'49') AND (C901_UTILIZACION.FE_EMISION901 = @D2) AND (C901_UTILIZACION.NGNF901 = @D3) ORDER BY C901_UTILIZACION.PARTE901", CNN);
+            ADT.Parameters.AddWithValue("D1", poliza);
+            ADT.Parameters.AddWithValue("D2", fe);
+            ADT.Parameters.AddWithValue("D3", ngnf);
+            dt = ADT.ExecuteReader();
+            if (dt.Read())
+            {
+                OT49C.polExpMac = int.Parse(poliza);
+                OT49C.agenteMac = 0;
+                OT49C.contrataMac = 768;
+                OT49C.identPolExpMac = "P";
+                //OT49C.nusuarioMac = dt.GetString(10);
+                OT49C.nusuarioMac = "EXT0002";
+                if (dt.GetString(0) == "R")
+                {
+                    OT49C.resultadoMac = 1;
+                    OT49C.numeroColoMac = dt.GetString(3);
+                    OT49C.capacColoMac = dt.GetString(4);
+                    OT49C.marcaColoMac = dt.GetString(5);
+                    try
+                    {
+                        OT49C.unidMedContColoMac = dt.GetInt32(7); ;
+                    }
+                    catch
+                    {
+                        OT49C.unidMedContColoMac = 5;
+                    }
+                    if (dt.GetValue(6) == null)
+                    {
+                        OT49C.estadoColoMac = 0;
+                    }
+                    else
+                    {
+                        if (dt.GetString(6) == "")
+                        {
+                            OT49C.estadoColoMac = 0;
+                        }
+                        else
+                        {
+                            OT49C.estadoColoMac = float.Parse(dt.GetString(6));
+                        }
+                    }
+                }
+                else
+                {
+                    OT49C.resultadoMac = 2;
+                }
+                OT49C.firmoCteMac = dt.GetString(8);
+                try
+                {
+                    OT49C.confCteMac = dt.GetString(9);
+                }
+                catch
+                {
+                    OT49C.confCteMac = "SI";
+                }
+                string obs = dt.GetString(2).ToUpper();
+                if (dt.GetDateTime(1) > feCliente)
+                {
+                    OT49C.feRealizaMac = dt.GetDateTime(1).ToString("yyyyMMdd");
+                    if (int.Parse(dt.GetDateTime(1).ToString("HHmm")) > int.Parse(feCliente.ToString("HHmm")))
+                    {
+                        OT49C.hoRealizMac = float.Parse(dt.GetDateTime(1).ToString("HHmm"));
+
+                    }
+                    else
+                    {
+                        OT49C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
+                    }
+                }
+                else
+                {
+                    OT49C.feRealizaMac = feCliente.ToString("yyyyMMdd");
+                    OT49C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
+                    if (obs.Length != 0)
+                    {
+                        obs = obs + "- FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
+                    }
+                    else
+                    {
+                        obs = "FECHA REAL " + dt.GetDateTime(1).ToString("dd/MM/yyyy HH:mm");
+                    }
+                }
+                OT49C.observNuevaMac = ObsGas(obs);
+                OT49C.anexosMac = obtenerAnexos(poliza, "49", ngnf, (DateTime)dt.GetDateTime(1), fe);
+                OT49C.observCepo = " ".PadLeft(50, ' ');
+                OT49C.cepo = obtenerTipoCierre(poliza, "49", ngnf, (DateTime)dt.GetDateTime(1), fe);
+                for (int cv = OT49C.anexosMac.Count; cv <= 9; cv++)
+                {
+                    OT49C.anexosMac.Add("  ");
+                }
+            }
+            //}
+            //catch (Exception ex)
+            //{
+            //    OT49C = null;
+            //    //   MessageBox.Show(ex.Message + "\n Error en generar  OT49");
+            //}
+            //finally
+            //{
+            CNN.Close();
+            //}
+            return OT49C;
+        }
+        public OT11_17_47_54 GENERAR_OT_47(string poliza, DateTime fe, string ngnf, DateTime feCliente)
+        {
+            //Modificado 13/11/2020 --> trae usuario mac
+            SqlConnection CNN = new SqlConnection(cadena.integrla);
+            SqlDataReader dt = null;
+            OT11_17_47_54 OT47C = new OT11_17_47_54();
+            try
+            {
+                CNN.Open();
+                SqlCommand ADT = new SqlCommand("SELECT TIPO_TRAB901,PARTE901, REALIZO901, FREALIZADO901, OBSERV901,ESTADORET901, FIRMO901, FE_EMISION901,NGNF901, CTAREA901,CONFORME901, USGC901 FROM C901_UTILIZACION WHERE (PARTE901 = @D1) AND (TIPO_TRAB901='47') AND (FE_EMISION901=@D2)AND (NGNF901=@D3) ORDER BY PARTE901", CNN);
+                ADT.Parameters.AddWithValue("D1", poliza);
+                ADT.Parameters.AddWithValue("D2", fe);
+                ADT.Parameters.AddWithValue("D3", ngnf);
+                dt = ADT.ExecuteReader();
+                if (dt.Read())
+                {
+                    OT47C.polExpMac = int.Parse(poliza);
+                    OT47C.agenteMac = 0;
+                    OT47C.identPolExpMac = "P";
+                    OT47C.contrataMac = 768;
+                    OT47C.nusuarioMac = dt.GetString(11);
+                    string obs = dt.GetString(4).ToUpper();
+                    if (dt.GetDateTime(3) > feCliente)
+                    {
+                        OT47C.feRealizaMac = dt.GetDateTime(3).ToString("yyyyMMdd");
+                        if (int.Parse(dt.GetDateTime(3).ToString("HHmm")) > int.Parse(feCliente.ToString("HHmm")))
+                        {
+                            OT47C.hoRealizMac = float.Parse(dt.GetDateTime(3).ToString("HHmm"));
+                        }
+                        else
+                        {
+                            OT47C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
+                        }
+                    }
+                    else
+                    {
+                        OT47C.feRealizaMac = feCliente.ToString("yyyyMMdd");
+                        OT47C.hoRealizMac = float.Parse(feCliente.AddMinutes(30).ToString("HHmm"));
+                        if (obs.Length != 0)
+                        {
+                            obs = obs + "- FECHA REAL " + dt.GetDateTime(3).ToString("dd/MM/yyyy HH:mm");
+                        }
+                        else
+                        {
+                            obs = "FECHA REAL " + dt.GetDateTime(3).ToString("dd/MM/yyyy HH:mm");
+                        }
+                    }
+                    OT47C.observNuevaMac = ObsGas(obs);
+                    OT47C.anexosMac = obtenerAnexos(poliza, "47", ngnf, (DateTime)dt.GetDateTime(3), fe);
+                    OT47C.firmoCteMac = dt.GetString(6);
+                    try
+                    {
+                        OT47C.confCteMac = dt.GetString(10);
+                    }
+                    catch
+                    {
+                        OT47C.confCteMac = "SI";
+                    }
+                    if (dt.GetString(2) == "R")
+                    {
+                        OT47C.resultadoMac = 1;
+                    }
+                    else
+                    {
+                        OT47C.resultadoMac = 2;
+                        for (int cv = 0; cv <= 3; cv++)
+                        {
+                            OT47C.cdVivMac.Add((cv + 1).ToString().PadLeft(2, '0'));
+                            OT47C.colorMac.Add(".".PadLeft(15, ' '));
+                            OT47C.materialMac.Add(".".PadLeft(15, ' '));
+                        }
+                    }
+                    if (dt.GetValue(5) == null)
+                    {
+                        OT47C.estadoRetiMac = 0;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            OT47C.estadoRetiMac = float.Parse(dt.GetString(5));
+                        }
+                        catch
+                        {
+                            OT47C.estadoRetiMac = 0;
+                        }
+                    }
+
+                    for (int cv = OT47C.colorMac.Count; cv <= 9; cv++)
+                    {
+                        OT47C.cdVivMac.Add("00");
+                        OT47C.colorMac.Add("".PadLeft(15, ' '));
+                        OT47C.materialMac.Add("".PadLeft(15, ' '));
+                    }
+                    for (int cv = OT47C.anexosMac.Count; cv <= 9; cv++)
+                    {
+                        OT47C.anexosMac.Add("  ");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                OT47C = null;
+                //MessageBox.Show(ex.Message + "\n OT47");
+            }
+            finally
+            {
+                CNN.Close();
+            }
+
+            return OT47C;
         }
         #endregion
         #region "Funciones Extra"
@@ -2100,7 +2173,7 @@ namespace ComunicacionSGC_NET.Funtions
             }
             return elcorre;
         }
-       
+
 
         #endregion
         #region "INDICADORES"

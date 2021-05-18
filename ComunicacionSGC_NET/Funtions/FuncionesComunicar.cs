@@ -264,7 +264,9 @@ namespace ComunicacionSGC_NET.Funtions
                         {
                             log = log + comunicar_GEO(Poli, nRgnf);
                             try {
-                            log = log + meBase.ComunicarMedidorAlmacen(Convert.ToDecimal(o42_43.numeroColoMac), Poli);
+                                if (o42_43.resultadoMac == 1) { log = log+"\r\n CAMBIO DE ESTADO ALMACENES \r\n" + meBase.ComunicarMedidorAlmacen(Convert.ToDecimal(o42_43.numeroColoMac), Poli);
+                                }
+                            
                             } catch(Exception ex) {
                                 log = log + "Error: " + ex.Message;
                             }
